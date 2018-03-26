@@ -71,18 +71,19 @@
   },
   "dependencies": {
     "bluebird": "^3.1.4",
+    "browserify": "^13.0.0",
+    "cssnano": "^3.10.0",
     "faye-websocket": "^0.11.0",
+    "fuse.js": "2.6.1",
     "highlight.js": "^9.7.0",
     "lzma": "^2.3.2",
     "marked": "^0.3.9",
-    "fuse.js": "2.6.1",
-    "rimraf": "2.5.4",
-    "request": "^2.79.0",
-    "browserify": "^13.0.0",
-    "uglify-js": "^3.0.27",
+    "pngjs": "^3.3.2",
     "postcss": "^6.0.9",
+    "request": "^2.79.0",
+    "rimraf": "2.5.4",
     "rtlcss": "^2.2.0",
-    "cssnano": "^3.10.0"
+    "uglify-js": "^3.0.27"
   },
   "optionalDependencies": {
     "keytar": "^3.0.2",

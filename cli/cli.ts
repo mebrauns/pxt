@@ -3878,6 +3878,35 @@ export function cleanGenAsync(parsed: commandParser.ParsedCommand) {
         .then(() => { });
 }
 
+function encode1bbImage(width: number, height: number, pixel: (index: number) => number): Uint8Array {
+    if (width > 300 || height > 300)
+        return null;
+    const byteW = (width + 7) >> 3;
+    const sz = (byteW + 1) * height;
+    const res = new Uint8Array(3 + byteW * height);
+    res[0] = 0xf1;
+    res[1] = width;
+    res[2] = height;
+    let dst = 3;
+    let src = 0;
+    let lastMask = (1 << (width & 7)) - 1;
+    if (lastMask == 0)
+        lastMask = 0xff;
+    for (let i = 0; i < height; ++i) {
+        if (pixel(src++) != 0) {
+            return null;
+        }
+        for (let j = 0; j < byteW; ++j) {
+            res[dst] = ~(pixel(src++));
+            if (j == byteW - 1) {
+                res[dst] &= lastMask;
+            }
+            dst++;
+        }
+    }
+    return res;
+}
+
 export function buildJResAsync(parsed: commandParser.ParsedCommand) {
     ensurePkgDir();
     nodeutil.allFiles(".")
@@ -3894,6 +3923,22 @@ export function buildJResAsync(parsed: commandParser.ParsedCommand) {
                 const jres = jresources[k];
                 const mime = jres.mimeType || star.mimeType;
                 pxt.log(`expanding ${k}`);
+                const png1 = path.join(dir, k + '-1bpp.png');
+                if (nodeutil.fileExistsSync(png1)) {
+                    pxt.log(`importing ${png1} as 1bpp PNG`);
+                    // fail if pngjs not installed
+                    const pngjs = require("pngjs");
+                    const buf = fs.readFileSync(png1);
+                    const unpack = pngjs.PNG.sync.read(buf);
+                    if (!unpack) {
+                        pxt.log(`invalid file format`);
+                    } else {
+                        const data = unpack.data as Uint8Array;
+                        let onebpp = encode1bbImage(unpack.width, unpack.height, (index) => !!(data[index * 4] << 24 | data[index * 4 + 1] << 16 | data[index * 4 + 2] << 8 | data[index * 4 + 3]) ? 1 : 0);
+                        jres.data = btoa(onebpp.reduce((p, byte) => p + String.fromCharCode(byte), ""));
+                        jres.icon = 'data:image/png;base64,' + buf.toString('base64');
+                    }
+                }
                 // try to slurp icon
                 const iconn = path.join(dir, k + '-icon.png');
                 if (nodeutil.fileExistsSync(iconn)) {
